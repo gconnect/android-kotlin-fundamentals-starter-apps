@@ -22,6 +22,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.android.marsrealestate.network.MarsApi
+import com.example.android.marsrealestate.network.MarsApiFilter
 import com.example.android.marsrealestate.network.MarsProperty
 import kotlinx.coroutines.launch
 import retrofit2.Call
@@ -39,30 +40,29 @@ class OverviewViewModel : ViewModel() {
     // The internal MutableLiveData String that stores the most recent response
     private val _status = MutableLiveData<MarsApiStatus>()
     private val _properties = MutableLiveData<List<MarsProperty>>()
-
-    val properties: LiveData<List<MarsProperty>>
-        get() = _properties
+    private val _navigateToSelectedProperty = MutableLiveData<MarsProperty>()
+    val navigateToSelectedProperty: LiveData<MarsProperty> get() = _navigateToSelectedProperty
+    val properties: LiveData<List<MarsProperty>> get() = _properties
 
     // The external immutable LiveData for the response String
-    val status: LiveData<MarsApiStatus>
-        get() = _status
+    val status: LiveData<MarsApiStatus> get() = _status
 
 
     /**
      * Call getMarsRealEstateProperties() on init so we can display status immediately.
      */
     init {
-        getMarsRealEstateProperties()
+        getMarsRealEstateProperties(MarsApiFilter.SHOW_ALL)
     }
 
     /**
      * Sets the value of the status LiveData to the Mars API status.
      */
-    private fun getMarsRealEstateProperties() {
+    private fun getMarsRealEstateProperties(filter: MarsApiFilter) {
        viewModelScope.launch{
            MarsApiStatus.LOADING
            try {
-               _properties.value = MarsApi.retrofitService.getProperties()
+               _properties.value = MarsApi.retrofitService.getProperties(filter.value)
                _status.value = MarsApiStatus.DONE
            }catch (e : Exception){
                _status.value = MarsApiStatus.ERROR
@@ -70,5 +70,17 @@ class OverviewViewModel : ViewModel() {
 
            }
        }
+    }
+
+    fun updateFilter(filter: MarsApiFilter) {
+        getMarsRealEstateProperties(filter)
+    }
+
+    fun displayPropertyDetails(marsProperty: MarsProperty) {
+        _navigateToSelectedProperty.value = marsProperty
+    }
+
+    fun displayPropertyDetailsComplete() {
+        _navigateToSelectedProperty.value = null
     }
 }
